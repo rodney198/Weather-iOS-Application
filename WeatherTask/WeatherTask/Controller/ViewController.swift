@@ -82,10 +82,11 @@ class ViewController: UIViewController {
     
 }
 
+//MARK: - This extension is used to make API Calls
 extension ViewController {
     //MARK: - Fetch the Data from the API
     private func fetchData(location: String) {
-        let urlString = "https://api.openweathermap.org/data/2.5/forecast?q=\(location)&appid=79f4dee6de7a4f6dc54b69d870c20f8e"
+        let urlString = "\(BASE_URL)q=\(location)&appid=\(API_KEY)"
         NetworkManager.shared.getRequest(urlString: urlString) { [self] (result: Result<WeatherResponse, NetworkError>) in
             switch result {
             case .success(let weatherData):
@@ -120,12 +121,16 @@ extension ViewController {
                 DispatchQueue.main.async {
                     self.tableViewList.reloadData()
                     // Update your UI here
-                    updateUIElements(data: weatherList)
+                    self.updateUIElements(data: self.weatherList)
                 }
                 
             case .failure(let error):
                 print("Error: \(error)")
                 // Handle error accordingly
+                DispatchQueue.main.async {
+                    showAlertMessage(title: "Error", message: "Failed to Fetch Weather Updates")
+
+                }
             }
         }
     }
@@ -226,8 +231,6 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
 
 // MARK: - UISearchResultsUpdating
 extension ViewController: UISearchBarDelegate {
-    
-    
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         var query = searchText.trimmingCharacters(in: .whitespaces)
         debugPrint(query)

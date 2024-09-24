@@ -17,9 +17,12 @@ class ViewController: UIViewController {
     @IBOutlet weak var windView: UIView!
     @IBOutlet weak var weatherDescView: UIView!
     @IBOutlet weak var searchbaseView: UIView!
+    @IBOutlet weak var noSearchView: UIView!
     
     @IBOutlet weak var tableViewList: UITableView!
     @IBOutlet weak var searchView: UIView!
+    @IBOutlet weak var citySearchbar: UISearchBar!
+    @IBOutlet weak var citytableViewList: UITableView!
     @IBOutlet weak var tempLBL: UILabel!
     @IBOutlet weak var nameLBL: UILabel!
     @IBOutlet weak var desLBL: UILabel!
@@ -33,9 +36,6 @@ class ViewController: UIViewController {
     
     //MARK: - Cell Reuse Identifier
     let weatherListTVCell = "WhetherCell"
-    
-    private let searchTableView = UITableView()
-    private var searchController: UISearchController!
     private var filteredCities: [String] = []
     private var allCities: [String] = ["Mumbai", "Delhi", "Bangalore", "Kolkata", "Chennai", "Hyderabad", "Ahmedabad", "Pune", "Jaipur", "Lucknow"]
     private let locationManager = CLLocationManager()
@@ -45,7 +45,6 @@ class ViewController: UIViewController {
         // Do any additional setup after loading the view.
         fetchCityfromJson()
         fetchData(location: "Kolkata")
-        setupSearchController()
         setupTableView()
         setupData()
     }
@@ -61,6 +60,29 @@ class ViewController: UIViewController {
         searchbaseView.isHidden = true
     }
     
+    private func setupTableView() {
+        searchbaseView.isHidden = true
+        citytableViewList.delegate = self
+        citytableViewList.dataSource = self
+        citySearchbar.backgroundColor = UIColor.clear
+        citySearchbar.isOpaque = false
+        citySearchbar.delegate = self
+        citytableViewList.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        citySearchbar.placeholder = "Search for the City"
+        citySearchbar.searchTextField.backgroundColor = .white
+        searchView.layer.cornerRadius = 10
+        searchView.layer.borderWidth = 1
+
+
+        tableViewList.delegate = self
+        tableViewList.dataSource = self
+        let cellNib1 = UINib(nibName: weatherListTVCell, bundle: nil)
+        tableViewList.register(cellNib1, forCellReuseIdentifier: weatherListTVCell)
+    }
+    
+}
+
+extension ViewController {
     //MARK: - Fetch the Data from the API
     private func fetchData(location: String) {
         let urlString = "https://api.openweathermap.org/data/2.5/forecast?q=\(location)&appid=79f4dee6de7a4f6dc54b69d870c20f8e"
@@ -135,48 +157,7 @@ class ViewController: UIViewController {
         humidityLBL.text = String("\(data[0].main.humidity)%")
         windLBL.text = String("\(data[0].wind.speed)m/s")
     }
-}
 
-extension ViewController {
-    private func setupSearchController() {
-        searchController = UISearchController(searchResultsController: nil)
-        searchController.searchResultsUpdater = self
-        searchController.obscuresBackgroundDuringPresentation = false
-        searchController.searchBar.placeholder = "Search Cities"
-        
-        // Set the search controller in the navigation item
-        navigationItem.searchController = searchController
-        definesPresentationContext = true
-    }
-    
-    private func setupTableView() {
-        searchTableView.delegate = self
-        searchTableView.dataSource = self
-        searchController.searchBar.delegate = self
-        searchTableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
-        
-        tableViewList.delegate = self
-        tableViewList.dataSource = self
-        let cellNib1 = UINib(nibName: weatherListTVCell, bundle: nil)
-        tableViewList.register(cellNib1, forCellReuseIdentifier: weatherListTVCell)
-        
-        searchbaseView.addSubview(searchTableView)
-        searchTableView.translatesAutoresizingMaskIntoConstraints = false
-        
-        NSLayoutConstraint.activate([
-            searchTableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40),
-            searchTableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            searchTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            searchTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
-        ])
-    }
-    
-    private func updateCityList(with city: String) {
-        if !allCities.contains(city) {
-            allCities.append(city)
-        }
-        searchTableView.reloadData()
-    }
 
 }
 
@@ -185,9 +166,10 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
-        if tableView == searchTableView {
+        if tableView == citytableViewList {
             // Show no results initially
-            return isFiltering() ? filteredCities.count : 0
+//            return isFiltering() ? filteredCities.count : 0
+            return  filteredCities.count
         } else if tableView == tableViewList {
             return dateForecasts.count
         }
@@ -195,7 +177,7 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        if tableView == searchTableView {
+        if tableView == citytableViewList {
             let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
             let city = filteredCities[indexPath.row] // Always use filteredCities if filtering
             cell.textLabel?.text = city
@@ -230,34 +212,36 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let selectedCity = filteredCities[indexPath.row]
         print("Selected city: \(selectedCity)") // Print the selected city
-        searchController.isActive = false // Dismiss the search controller
-        searchController.searchBar.resignFirstResponder()
+        citySearchbar.resignFirstResponder()
         tableView.deselectRow(at: indexPath, animated: true) // Deselect the row
         self.fetchData(location: selectedCity)
-        searchView.isHidden = true
+        searchbaseView.isHidden = true
+        citySearchbar.text = ""
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 45
     }
-    
-    private func isFiltering() -> Bool {
-        return searchController.isActive && !(searchController.searchBar.text?.isEmpty ?? true)
-    }
 }
 
 // MARK: - UISearchResultsUpdating
-extension ViewController: UISearchResultsUpdating, UISearchBarDelegate {
+extension ViewController: UISearchBarDelegate {
     
-    func updateSearchResults(for searchController: UISearchController) {
-        guard let searchText = searchController.searchBar.text else { return }
-        
-        // Filter the cities based on the search text
-        filteredCities = allCities.filter { city in
-            return city.lowercased().contains(searchText.lowercased())
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        var query = searchText.trimmingCharacters(in: .whitespaces)
+        debugPrint(query)
+        if !query.isEmpty {
+            // Filter the cities based on the search text
+            filteredCities = allCities.filter { city in
+                return city.lowercased().contains(searchText.lowercased())
+            }
+            searchbaseView.isHidden = false
+            noSearchView.isHidden = true
+        } else {
+            searchbaseView.isHidden = true
         }
-        
-        searchTableView.reloadData() // Reload the table view to reflect changes
+        citytableViewList.reloadData()
     }
     
     // UISearchBarDelegate Methods
@@ -274,8 +258,6 @@ extension ViewController: UISearchResultsUpdating, UISearchBarDelegate {
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         print("Search completed")
         searchbaseView.isHidden = true
-        searchController.isActive = false // Dismiss the search controller
-        searchController.searchBar.resignFirstResponder() // Dismiss the keyboard
     }
 }
 

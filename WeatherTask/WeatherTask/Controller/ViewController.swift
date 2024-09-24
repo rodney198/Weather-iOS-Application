@@ -10,7 +10,6 @@ import CoreLocation
 
 class ViewController: UIViewController {
 
-    
     //MARK: - View Outlets
     @IBOutlet weak var topBaseView: UIView!
     @IBOutlet weak var feelsLikeView: UIView!
@@ -44,6 +43,7 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
+        fetchCityfromJson()
         fetchData(location: "Kolkata")
         setupSearchController()
         setupTableView()
@@ -108,6 +108,22 @@ class ViewController: UIViewController {
         }
     }
     
+    //MARK:  -Fetch data from Json
+    func fetchCityfromJson() -> [Location] {
+        var locations: [Location] = []
+        if let path = Bundle.main.path(forResource: "Cities", ofType: "json") {
+            do {
+                let jsonData = try Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe)
+                 locations = try JSONDecoder().decode([Location].self, from: jsonData)
+                print(locations)
+                self.allCities = locations.map { $0.name }
+            } catch {
+                print("Failed to decode JSON: \(error)")
+            }
+        }
+        return locations
+    }
+        
     func updateUIElements(data: [WeatherData]) {
         let temp = kelvinToCelsius(kelvin: data[0].main.temp)
         self.tempLBL.text = String("\(temp)°")

@@ -199,43 +199,32 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
             let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
             let city = filteredCities[indexPath.row] // Always use filteredCities if filtering
             cell.textLabel?.text = city
-            
             return cell
         } else if tableView == tableViewList {
-            let cell: WhetherCell = tableView.dequeueReusableCell(withIdentifier: weatherListTVCell) as! WhetherCell
+            let cell: WhetherCell = tableView.dequeueReusableCell(withIdentifier: weatherListTVCell, for: indexPath) as! WhetherCell
             cell.backgroundColor = .clear
-            
-            for weather in weatherList {
-                let dateString = String(weather.dtTxt.prefix(10)) // Get the date part (YYYY-MM-DD)
-                let timeString = String(weather.dtTxt.suffix(8)) // Get the time part (HH:mm:ss)
-                
-                if timeString == "09:00:00" {
-                    dateForecasts[dateString] = weather // Keep only the first forecast for that date
-                }
-            }
-//            cell.dateTimeLbl.text = dateForecasts[indexPath.row]?.dtTxt
-            // Select the first three different dates with 9:00 AM
-            let uniqueDates = Array(dateForecasts.keys.prefix(5))
 
-            // Print out the forecasts for the three different dates
-            for date in uniqueDates {
-                if let forecast = dateForecasts[date] {
-//                    print("Forecast for \(date) at 09:00 AM:")
-                    print("  Temp: \(forecast.main.temp), Condition: \(forecast.weather.first?.description ?? "")")
-                    
-                    cell.dateTimeLbl.text = date
-                    cell.cloudLbl.text = forecast.weather[0].main.rawValue
-                    let mintemp = kelvinToCelsius(kelvin: forecast.main.tempMin)
-                    let maxtemp = kelvinToCelsius(kelvin: forecast.main.tempMax)
-                    cell.tempLbl.text = "\(mintemp)° \(maxtemp)°"
-                }
-            }
+            // Use a filtered array of forecasts based on unique dates at 09:00 AM
+            let uniqueDates = Array(dateForecasts.keys).sorted() // Sort to maintain order
             
+            // Ensure we don't exceed the array bounds
+            guard indexPath.row < uniqueDates.count else {
+                return cell // Return an empty cell if there's no data
+            }
+
+            let date = uniqueDates[indexPath.row]
+            if let forecast = dateForecasts[date] {
+                // Display the forecast for the specific date
+                cell.dateTimeLbl.text = date
+                cell.cloudLbl.text = forecast.weather[0].main.rawValue
+                let mintemp = kelvinToCelsius(kelvin: forecast.main.tempMin)
+                let maxtemp = kelvinToCelsius(kelvin: forecast.main.tempMax)
+                cell.tempLbl.text = "\(mintemp)° \(maxtemp)°"
+            }
             
             return cell
         }
         return UITableViewCell()
-
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
